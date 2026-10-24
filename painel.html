@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel de Controle Micro:bit</title>
+    <style>
+        body { background: #333; color: #fff; text-align: center; font-family: sans-serif; padding: 20px; }
+        h1 { color: #aaa; }
+        button { font-size: 20px; padding: 20px; margin: 10px; border-radius: 15px; cursor: pointer; font-weight: bold; width: 140px; border: none; }
+        .connect-btn { background: #008CBA; color: white; width: 90%; max-width: 400px; }
+        .dir-btn { background: #555; color: white; }
+        .func-btn { background: #ff9800; color: white; }
+        .alert-btn { background: #4CAF50; color: white; }
+        .stop-btn { background: #f44336; color: white; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; justify-items: center; max-width: 450px; margin: 0 auto; }
+        .bottom-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; justify-items: center; max-width: 450px; margin: 20px auto; }
+    </style>
+</head>
+<body>
+    <h1>Painel de Controle</h1>
+    <button id="connectBtn" class="connect-btn">🔗 Conectar ao Carrinho</button>
+    <br><br>
+
+    <div class="grid">
+        <div></div>
+        <button class="dir-btn" onclick="sendCmd('1')">⬆️ Frente</button>
+        <div></div>
+        <button class="dir-btn" onclick="sendCmd('4')">⬅️ Esquerda</button>
+        <button class="stop-btn" onclick="sendCmd('6')">🛑 Parar</button>
+        <button class="dir-btn" onclick="sendCmd('3')">➡️ Direita</button>
+        <div></div>
+        <button class="dir-btn" onclick="sendCmd('2')">⬇️ Trás</button>
+        <div></div>
+    </div>
+
+    <div class="bottom-grid">
+        <button class="func-btn" onclick="sendCmd('5')">🚀 Turbo</button>
+        <button class="func-btn" onclick="sendCmd('7')"> Modo Dance</button>
+        <button class="alert-btn" onclick="sendCmd('8')">💧 Umidade</button>
+        <button class="alert-btn" onclick="sendCmd('9')">🌡️ Temp</button>
+        <button class="alert-btn" onclick="sendCmd('11')">🌱 Umidade Solo</button>
+        <button class="stop-btn" onclick="sendCmd('10')">👤 Solo</button>
+    </div>
+
+    <script>
+        let bluetoothDevice;
+        let uartCharacteristic;
+        const UART_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+        const UART_TX_CHARACTERISTIC_UUID = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
+
+        document.getElementById('connectBtn').addEventListener('click', async () => {
+            try {
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    filters: [{ namePrefix: "BBC micro:bit" }],
+                    optionalServices: [UART_SERVICE_UUID]
+                });
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService(UART_SERVICE_UUID);
+                uartCharacteristic = await service.getCharacteristic(UART_TX_CHARACTERISTIC_UUID);
+                alert("Conectado com sucesso ao carrinho!");
+            } catch (error) {
+                alert("Erro ao conectar: " + error);
+            }
+        });
+
+        async function sendCmd(cmd) {
+            if (!uartCharacteristic) {
+                alert("Conecte primeiro ao carrinho!");
+                return;
+            }
+            const encoder = new TextEncoder();
+            await uartCharacteristic.writeValue(encoder.encode(cmd + "\n"));
+        }
+    </script>
+</body>
+</html>
